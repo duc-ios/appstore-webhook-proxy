@@ -5,11 +5,16 @@ async function sendToSlack(payload, webhookUrl) {
   const message = buildSlackMessage(payload);
   if (!message) return;
 
+  console.log(`Sending Slack message: ${JSON.stringify(message, null, 2)}`);
+
   try {
     await axios.post(webhookUrl, message);
     console.log("✅ Slack message sent successfully.");
   } catch (error) {
-    console.error("❌ Failed to send Slack message:", error.response?.data || error.message);
+    console.error(
+      "❌ Failed to send Slack message:",
+      error.response?.data || error.message
+    );
   }
 }
 

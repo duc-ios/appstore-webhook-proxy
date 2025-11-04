@@ -9,15 +9,18 @@ const {
   getExternalBuildStateEmoji,
 } = require("./stateDescriptions");
 
+const { getBuildUploadInfo } = require("../services/buildUploadInfoFetcher");
 const { DateTime } = require("luxon");
 
 function formatTimestamp(iso) {
-  const timezone = process.env.TIMEZONE || 'UTC';
-  const date = DateTime.fromISO(iso, { zone: 'utc' }).setZone(timezone);
+  const timezone = process.env.TIMEZONE || "UTC";
+  const date = DateTime.fromISO(iso, { zone: "utc" }).setZone(timezone);
   return date.toFormat("ccc, dd LLL yyyy HH:mm:ss ZZZZ");
 }
 
-function buildTeamsMessage(payload) {
+async function buildTeamsMessage(payload) {
+  console.log(`Received payload: ${JSON.stringify(payload, null, 2)}`);
+
   const type = payload.data?.type || "unknown";
   const rawTimestamp =
     payload.data?.attributes?.timestamp || new Date().toISOString();
@@ -91,7 +94,8 @@ function buildTeamsMessage(payload) {
         },
       ];
 
-      const isValidFeedbackId = typeof feedbackId === "string" && feedbackId.trim() !== "";
+      const isValidFeedbackId =
+        typeof feedbackId === "string" && feedbackId.trim() !== "";
 
       if (isValidFeedbackId && adamId) {
         const webLink = `https://appstoreconnect.apple.com/apps/${adamId}/testflight/screenshots/${feedbackId}`;
@@ -132,7 +136,8 @@ function buildTeamsMessage(payload) {
         },
       ];
 
-      const isValidCrashId = typeof crashId === "string" && crashId.trim() !== "";
+      const isValidCrashId =
+        typeof crashId === "string" && crashId.trim() !== "";
 
       if (isValidCrashId && adamId) {
         const webLink = `https://appstoreconnect.apple.com/apps/${adamId}/testflight/crashes/${crashId}`;
@@ -148,10 +153,11 @@ function buildTeamsMessage(payload) {
       };
     },
 
-    buildUploadStateUpdated: () => {
+    buildUploadStateUpdated: async () => {
       const newState = payload.data.attributes?.newState;
       const oldState = payload.data.attributes?.oldState;
       const uploadId = payload.data.relationships?.instance?.data?.id;
+      const uploadInfo = await getBuildUploadInfo(uploadId);
 
       const facts = [
         {
@@ -174,15 +180,14 @@ function buildTeamsMessage(payload) {
 
       return {
         title: "⬆️ App Store Build Upload Processed",
+        subTitle: ` [QA] AutoSec ${uploadInfo.version} (${uploadInfo.build})`,
         facts,
       };
     },
 
     buildBetaDetailExternalBuildStateUpdated: () => {
-      const externalState =
-        payload.data.attributes?.newExternalBuildState;
-      const buildBetaDetailsId =
-        payload.data.relationships?.instance?.data?.id;
+      const externalState = payload.data.attributes?.newExternalBuildState;
+      const buildBetaDetailsId = payload.data.relationships?.instance?.data?.id;
 
       const eventTimestampIso = payload.data.attributes?.timestamp;
       const readableTs = formatTimestamp(eventTimestampIso || rawTimestamp);
@@ -207,11 +212,9 @@ function buildTeamsMessage(payload) {
         facts,
       };
     },
-
-
   };
 
-  const template = events[type]?.() ?? {
+  const template = (await events[type]?.()) ?? {
     title: `📬 Unhandled App Store Event: \`${type}\``,
     facts: [
       { name: "⏱️ Timestamp", value: timestamp },
@@ -232,7 +235,7 @@ function buildTeamsMessage(payload) {
     sections: [
       {
         activityTitle: template.title,
-        activitySubtitle: "App Store Connect via Proxy",
+        activitySubtitle: template.subTitle || "App Store Connect via Proxy",
         activityImage:
           "https://developer.apple.com/assets/elements/icons/app-store/app-store-128x128_2x.png",
         facts: template.facts,
