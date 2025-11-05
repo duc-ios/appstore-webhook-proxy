@@ -76,8 +76,9 @@ function getJWTToken() {
 async function getBuildUploadInfo(buildUploadId) {
   try {
     const token = getJWTToken();
+    // First, fetch the buildUpload with build relationship
     const response = await axios.get(
-      `https://api.appstoreconnect.apple.com/v1/buildUploads/${buildUploadId}`,
+      `https://api.appstoreconnect.apple.com/v1/buildUploads/${buildUploadId}?include=build`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -89,9 +90,45 @@ async function getBuildUploadInfo(buildUploadId) {
       `✅ Fetched build upload info ${JSON.stringify(response.data, null, 2)}`
     );
     const attributes = response.data.data.attributes;
+
+    // Extract build ID from relationships
+    const buildId = response.data.data.relationships?.build?.data?.id;
+    let appName = null;
+
+    // If we have a build ID, fetch the app name from the build
+    if (buildId) {
+      try {
+        // Fetch the build with app relationship included
+        const buildResponse = await axios.get(
+          `https://api.appstoreconnect.apple.com/v1/builds/${buildId}?include=app`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        // Extract app name from included data
+        if (buildResponse.data.included) {
+          const app = buildResponse.data.included.find(
+            (item) => item.type === "apps"
+          );
+          if (app && app.attributes) {
+            appName = app.attributes.name;
+          }
+        }
+      } catch (buildError) {
+        console.warn(
+          `⚠️ Failed to fetch app name from build: ${buildError.message}`
+        );
+      }
+    }
+
     return {
       version: attributes.cfBundleShortVersionString,
       build: attributes.cfBundleVersion,
+      appName: appName,
     };
   } catch (error) {
     console.error(

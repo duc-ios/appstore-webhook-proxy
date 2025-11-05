@@ -2,9 +2,19 @@ const axios = require("axios");
 const { buildTeamsMessage } = require("../utils/eventTemplates");
 
 async function sendToTeams(payload, webhookUrl) {
-  const message = await buildTeamsMessage(payload);
-  if (!message) return;
+  const adaptiveCard = await buildTeamsMessage(payload);
+  if (!adaptiveCard) return;
 
+  // Wrap AdaptiveCard in Teams message format with attachments
+  const message = {
+    type: "message",
+    attachments: [
+      {
+        contentType: "application/vnd.microsoft.card.adaptive",
+        content: adaptiveCard,
+      },
+    ],
+  };
   console.log(`Sending Teams message: ${JSON.stringify(message, null, 2)}`);
 
   try {

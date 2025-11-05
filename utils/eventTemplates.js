@@ -180,7 +180,7 @@ async function buildTeamsMessage(payload) {
 
       return {
         title: "⬆️ App Store Build Upload Processed",
-        subTitle: ` [QA] AutoSec ${uploadInfo.version} (${uploadInfo.build})`,
+        subTitle: `📱 ${uploadInfo.appName} ${uploadInfo.version} (${uploadInfo.build})`,
         facts,
       };
     },
@@ -227,21 +227,66 @@ async function buildTeamsMessage(payload) {
 
   if (!template) return null;
 
+  // Convert facts from MessageCard format to AdaptiveCard format
+  const factSetFacts = template.facts.map((fact) => ({
+    title: fact.name,
+    value: fact.value,
+  }));
+
+  const body = [
+    {
+      type: "Image",
+      url: "https://developer.apple.com/assets/elements/icons/app-store/app-store-128x128_2x.png",
+      size: "Medium",
+      horizontalAlignment: "Left",
+    },
+    {
+      type: "TextBlock",
+      text: template.title,
+      weight: "Bolder",
+      size: "Large",
+      wrap: true,
+      spacing: "Medium",
+    },
+  ];
+
+  // Add subtitle if present
+  if (template.subTitle) {
+    body.push({
+      type: "TextBlock",
+      text: template.subTitle,
+      weight: "Default",
+      size: "Medium",
+      isSubtle: true,
+      wrap: true,
+      spacing: "Small",
+    });
+  } else {
+    body.push({
+      type: "TextBlock",
+      text: "App Store Connect via Proxy",
+      weight: "Default",
+      size: "Medium",
+      isSubtle: true,
+      wrap: true,
+      spacing: "Small",
+    });
+  }
+
+  // Add FactSet
+  if (factSetFacts.length > 0) {
+    body.push({
+      type: "FactSet",
+      facts: factSetFacts,
+      spacing: "Medium",
+    });
+  }
+
   return {
-    "@type": "MessageCard",
-    "@context": "https://schema.org/extensions",
-    themeColor: "0078D7",
-    summary: "App Store Webhook",
-    sections: [
-      {
-        activityTitle: template.title,
-        activitySubtitle: template.subTitle || "App Store Connect via Proxy",
-        activityImage:
-          "https://developer.apple.com/assets/elements/icons/app-store/app-store-128x128_2x.png",
-        facts: template.facts,
-        markdown: true,
-      },
-    ],
+    type: "AdaptiveCard",
+    $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
+    version: "1.4",
+    body: body,
   };
 }
 

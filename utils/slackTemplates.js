@@ -43,7 +43,9 @@ function buildSlackMessage(payload) {
           fields: [
             {
               type: "mrkdwn",
-              text: `*${getStatusEmoji(newValue)} Current Status:*\n${getAppStoreStatusLabel(newValue)}`,
+              text: `*${getStatusEmoji(
+                newValue
+              )} Current Status:*\n${getAppStoreStatusLabel(newValue)}`,
             },
             {
               type: "mrkdwn",
@@ -112,7 +114,8 @@ function buildSlackMessage(payload) {
 
       const elements = [];
 
-      const isValidFeedbackId = typeof feedbackId === "string" && feedbackId.trim() !== "";
+      const isValidFeedbackId =
+        typeof feedbackId === "string" && feedbackId.trim() !== "";
 
       if (isValidFeedbackId && adamId) {
         const webLink = `https://appstoreconnect.apple.com/apps/${adamId}/testflight/screenshots/${feedbackId}`;
@@ -172,7 +175,8 @@ function buildSlackMessage(payload) {
 
       const elements = [];
 
-      const isValidCrashId = typeof crashId === "string" && crashId.trim() !== "";
+      const isValidCrashId =
+        typeof crashId === "string" && crashId.trim() !== "";
       if (isValidCrashId && adamId) {
         const webLink = `https://appstoreconnect.apple.com/apps/${adamId}/testflight/crashes/${crashId}`;
         elements.push({
@@ -237,7 +241,9 @@ function buildSlackMessage(payload) {
           fields: [
             {
               type: "mrkdwn",
-              text: `*${getBuildUploadStateEmoji(newState)} Current State:*\n${getBuildUploadStateLabel(newState)}`,
+              text: `*${getBuildUploadStateEmoji(
+                newState
+              )} Current State:*\n${getBuildUploadStateLabel(newState)}`,
             },
             {
               type: "mrkdwn",
@@ -259,10 +265,8 @@ function buildSlackMessage(payload) {
     },
 
     buildBetaDetailExternalBuildStateUpdated: () => {
-      const externalState =
-        payload.data.attributes?.newExternalBuildState;
-      const buildBetaDetailsId =
-        payload.data.relationships?.instance?.data?.id;
+      const externalState = payload.data.attributes?.newExternalBuildState;
+      const buildBetaDetailsId = payload.data.relationships?.instance?.data?.id;
 
       const eventTimestampIso = payload.data.attributes?.timestamp;
       const eventTimestamp = formatTimestamp(eventTimestampIso || rawTimestamp);
@@ -281,7 +285,11 @@ function buildSlackMessage(payload) {
           fields: [
             {
               type: "mrkdwn",
-              text: `*${getExternalBuildStateEmoji(externalState)} External Status:*\n${getExternalBuildStateLabel(externalState)}`,
+              text: `*${getExternalBuildStateEmoji(
+                externalState
+              )} External Status:*\n${getExternalBuildStateLabel(
+                externalState
+              )}`,
             },
             {
               type: "mrkdwn",
@@ -301,7 +309,6 @@ function buildSlackMessage(payload) {
 
       return { blocks };
     },
-
   };
 
   const template = events[type]?.() ?? {
